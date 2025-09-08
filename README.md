@@ -3,12 +3,16 @@ created 2 mns
 connected to local
 installed jhenkings in first one
 installed docker in 2nd one but it failed and connected to command prompt
+
 Day 1:
 Expalining what we are going to do in this session
+
 Day 2:
 deploying application in local
+
 Day 3:
 Setting up infra for building CI Pipeline inside which we write diff stages including diff security tools
+
 Infra needed
 ============
 1. Github repo 2. Jenkins(CICD) 3. SonarQube 4. Trivy  5. Docker (We will build docker images)
