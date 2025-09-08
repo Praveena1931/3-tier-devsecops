@@ -32,8 +32,8 @@ Stages:
 -------
 1. Git Checkout 2. Compilation 3. Gitleaks 4. FS Trivy 5. Unit Testing 6. SonarQube Analysis 7. Quality gate check 8. Docker Image 9. FS Trivy 10. Push Image to DockerHub Repo or other repo
 
-Git Checkout\: It will create local copy of source code inside jenkins.
-Compilation\ : we execute a command to find any kind of syntax based error ex: missed comma or bracket or spelling mistakes.
+- Git Checkout: It will create local copy of source code inside jenkins.
+Compilation : we execute a command to find any kind of syntax based error ex: missed comma or bracket or spelling mistakes.
 Gitleaks : Ex: in you source code you added some sensitive data like pwds, API Keys, Tokens etc. which should not be added, then 
             gitleaks will find such info and tells in which line its added which you ahve to remove.It acts as security tool to check where secrets are added.
 FS Trivy : File Scan by Trivy which will check dependency file. Ex: Java dependency file is com.xml where we have info about
