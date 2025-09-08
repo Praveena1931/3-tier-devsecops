@@ -32,26 +32,27 @@ Stages:
 -------
 1. Git Checkout 2. Compilation 3. Gitleaks 4. FS Trivy 5. Unit Testing 6. SonarQube Analysis 7. Quality gate check 8. Docker Image 9. FS Trivy 10. Push Image to DockerHub Repo or other repo
 
-- Git Checkout: It will create local copy of source code inside jenkins.
-Compilation : we execute a command to find any kind of syntax based error ex: missed comma or bracket or spelling mistakes.
-Gitleaks : Ex: in you source code you added some sensitive data like pwds, API Keys, Tokens etc. which should not be added, then 
+-Git Checkout: It will create local copy of source code inside jenkins.
+-Compilation : we execute a command to find any kind of syntax based error ex: missed comma or bracket or spelling mistakes.
+-Gitleaks : Ex: in you source code you added some sensitive data like pwds, API Keys, Tokens etc. which should not be added, then 
             gitleaks will find such info and tells in which line its added which you ahve to remove.It acts as security tool to check where secrets are added.
-FS Trivy : File Scan by Trivy which will check dependency file. Ex: Java dependency file is com.xml where we have info about
+-FS Trivy : File Scan by Trivy which will check dependency file. Ex: Java dependency file is com.xml where we have info about
            dependencies, in Node.js we have package.json, in Dotnet we have .proj file, in python we have requirements.txt, so if we execute project based application trivy file system will scan this file and gets info about dependencies we are using in our code. After that it will compare that info about versions with a database which tells which version is vulnerable and not good to use and that will be stored in a report, so we can update our dependencies based on that report, and make sure our app is using secure dependencies and is not vulnerable.
-Unit Testing : Unit test cases written will be executed. we dont have to write UT test cases but wwe can execute them directly in
+-Unit Testing : Unit test cases written will be executed. we dont have to write UT test cases but wwe can execute them directly in
                our pipeline.
-SonarQube : It will go through line by line complete code that we have in our repository, and will find out any kind of bugs 
+-SonarQube : It will go through line by line complete code that we have in our repository, and will find out any kind of bugs 
             available inside the code like any logic is wrong which is making application behave in a wrong way. Vulnerability means the section of code that is vulnerable to attack. Ex: you are writing authentication code and you have given permission to viewer role also and admin role also this is vulnerability kind of thing.  So sonarqube will find those kind of bugs and tell us the severity like its critical or minor like that. second it will tell in which exact file and which line issue there. third it will tell how to solve it. if using sonarqube you can make sure code is bug free not having any kind of code related issue which will cause any kind of issue in future. It will also find Code Coverage(how much % of code is covered in Unit test cases)  also.
-Quality Gatecheck : Ex: after Sonarqube analysis you found 5 bugs and 1 vulnerability and 75% code coverage in sonarqube report. 
+-Quality Gatecheck : Ex: after Sonarqube analysis you found 5 bugs and 1 vulnerability and 75% code coverage in sonarqube report. 
             Each company will have their own treshold as 0 bugs 0 vulnerabilites min 80% Code coverage. which means your code is in compilance state when you meet this threshold. This Code Compilance check is done by Quality Gatecheck step.
-Docker Image : We will build docker image and tag it with specific version. We will Build Docker image just to make application 
+-Docker Image : We will build docker image and tag it with specific version. We will Build Docker image just to make application 
             portable. Means when we bulid image we will get a PAckage. That package is known as Docker image. This Package is combined or integrated with everything that is required to run the application. Once the package is created you can run your application in any platform irrespective of kind of paltform. This can be done by Docker.
             Docker makes our application portable so that we can share with anyone who can run it.
-FS Trivy : we will scan docker image file with trivy to find vulnerabilities
-Push image: we can easily pull images from rerpos and publish using kubernetes
+-FS Trivy : we will scan docker image file with trivy to find vulnerabilities
+-Push image: we can easily pull images from rerpos and publish using kubernetes
 ----****----
 Main Purpose of CI Pipeline is to make sure app is secureabd it is ready for deployment and should be automated completely.
 CD Pipeline we will deploy the application which got ready in CI Pipeline.
+
 Infra Setup
 ===========
 1. Create 2 VMS in AWS for Jenkins and SonarQube with T2Medium as instance and keep ports 3000-9000,443,587,80,22 open
@@ -90,15 +91,23 @@ Infra Setup
    After gitleaks check if code is proper or not by running pipeline once. if it is successful add trivy and sonarqube stage
    too work with sonarqube few setings needs to be done in jenkins need 2 things 1.sonarqube scanner 2.SonarQube server
    Scanner will be running inside jenkins performing the analysis generating the report and publishing the report over the server
-   Server is already steup we have to setup scanner in jenking for that navigate to Manage jenkins --> plugins --> available plugins --> srch sonarqube scanner and install and configure in tools give name and select version of scanner and click apply, next go to system find sonarQube server section provide server URL and server authentiacation token, to generate token go to sonarqube Server --> Administrator --> Security --> User --> Click on Tokens provide any name to token and generate --> Copy that token and go to jenkins --> Credentials --> Global --> Add Credentials --> Kind Secret text --> Pate token in secret tab --> Provide any id and description --> click on create after that inside jenkins tell where to publish scanner report becoz jenkins don't know where to publish it by default.
-   for that provide URL of server and credentials to access it
-
+   Server is already steup we have to setup scanner in jenking for that navigate to Manage jenkins --> plugins --> available plugins --> srch sonarqube scanner and install and configure in tools give name and select version of scanner and click apply, next go to system find sonarQube server section provide server URL and server authentiacation token, to generate token go to sonarqube Server --> Administrator --> Security --> User --> Click on Tokens provide any name to token and generate --> Copy that token and go to jenkins --> Credentials --> Global --> Add Credentials --> Kind Secret text --> Pate token in secret tab --> Provide any id and description --> click on create after that inside jenkins tell where to publish scanner report becoz jenkins don't know where to publish it by default.for that provide URL of server and credentials to access it
+   ex. when you want to open xyz file you will provide path like home/bin/xyz same like this cmnd $SCANNER_HOME/bin/sonar-scanner
+   for qualitygate check to pass successfully in sonarqube server configure webhook server--> administration --> configuration --> webhook --> create --> provide name --> jenkins url provide --> Add
+   we need to add webhook becoz, we are sending report from jenkins to sonarqube, in qualitygate check it will compare generated report with existing report for thst we have to generate webhook.
+   There is no direct plugin available for trivy inside jenkins so we have to install manually using google
+   srch for trivy instllation steps and install on VM, as we are directly installing we don't need to define in pipeline 
+   
+   if you didnt find pipeline sysntax by default restart jenkins by typing rester after URL
 
    // Jenkinsfile
 pipeline {
   agent any
   tools {    ----format tool name tool type----
     nodejs 'nodejs23'
+  }
+  environment{
+    SCANNER_HOME = tool 'sonar-scanner' "scanner name where we provided token details in credentials"
   }
   stages {
     stage('Git Checkout') {          ----from where should code be picked----
@@ -132,15 +141,26 @@ pipeline {
       }
     }
 
-    stage('Hello') {
+    stage('SonarQube Analysis') {
       steps {
-        echo 'Hello, World!'
+        withSonarQubeEnv('sonar')"this refers to name we provided in system confuguration tab"{
+          sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName = NodeJS-Project \
+               -Dsonar.projectKey  = Nodejs-project''' 
+        }
       }
     }
 
-    stage('Hello') {
+    stage('Quality Gate Check') { timetout to setup time of run
       steps {
-        echo 'Hello, World!'
+        timeout(time: 1, unit: 'HOURS'){
+            waitForQualityGate abortPipeline: false, credenatialsId: 'sonar-token'
+        }
+      }
+    }
+
+    stage('Trivy FS Scan') {
+      steps {
+          sh 'trivy fs -format table -o fs-report.html .'
       }
     }
   }
