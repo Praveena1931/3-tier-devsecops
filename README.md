@@ -171,7 +171,10 @@ pipeline {
 }
 
 Day 4:
-Dockarizind application to run on any platform, multistage docker file, docker compose file.
+Dockarizing application to run on any platform, multistage docker file, docker compose file.
+why docker? when we ran our app locally we have to install Nodejs, mySQL server, user, db should be setup, all the dependencies should be installed like NPM, backend should be started manually, frontend should be strted manually line npmstart, 5000,3306,3000 ports should also be open. these are all prerequisite. if you share application to anyone they have to install everything from scratch and theymight not have any knowledge on them. What if I package all these things(prerequisites) along with application, like source code, i will package nodejs, i will package SQL server, commands to run app, and package specific ports also. So I can create this new kind of package which has all information available plus required tools to run project, and also commands to run project, That means i can share this kind of application and tell to someone that instead of setting up things manually one by one you can trigger or start this package.
+so when he run specific command singlecmnd for running package automatically a box will be created which will be called as **container.** Container is an isolated environment inside which your application will run without any issues. So automatically a container will be created in side which our application will run.
+As comapred to local run this is much easier where we need one cmnd to run new package.
 
 
 
