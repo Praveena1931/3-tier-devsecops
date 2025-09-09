@@ -170,6 +170,8 @@ pipeline {
   }
 }
 
+Day 4:
+Dockarizind application to run on any platform, multistage docker file, docker compose file.
 
 
 
