@@ -174,7 +174,77 @@ Day 4:
 Dockarizing application to run on any platform, multistage docker file, docker compose file.
 why docker? when we ran our app locally we have to install Nodejs, mySQL server, user, db should be setup, all the dependencies should be installed like NPM, backend should be started manually, frontend should be strted manually line npmstart, 5000,3306,3000 ports should also be open. these are all prerequisite. if you share application to anyone they have to install everything from scratch and theymight not have any knowledge on them. What if I package all these things(prerequisites) along with application, like source code, i will package nodejs, i will package SQL server, commands to run app, and package specific ports also. So I can create this new kind of package which has all information available plus required tools to run project, and also commands to run project, That means i can share this kind of application and tell to someone that instead of setting up things manually one by one you can trigger or start this package.
 so when he run specific command singlecmnd for running package automatically a box will be created which will be called as **container.** Container is an isolated environment inside which your application will run without any issues. So automatically a container will be created in side which our application will run.
-As comapred to local run this is much easier where we need one cmnd to run new package.
+As comapred to local run this is much easier where we need one cmnd to run new package. Now this package becomes the portable application. So making the application portable packing the dependencies and other information replated to application and shipping that package to anyone, this whole process is known as **dockarizing** and tool used for doing this is **Docker**. Anyone who wants to run this package application need to have only one application that is DOCKER. In DOcker each line is layer
+
+Steps
+=====
+1. Dockarizing Backend 2. Dockarizing Frontend 3. Connect both frontend and backend together along with MYSQL for this we need **Docker compose**.
+If Your app is having only one component like only frontend you can create an Image and run it, what if you have multiple components line backend frontend database, we have to create 3 images i.e 3 containers will be created for each we need to make sure these containers are created one by one or create another file docker compose in this we define all the information like for all three components create docker images and create Ccontainers and connect them together. After that run Docker compose command which will automatically going to cerate containers make sure they are connected and start the app.
+
+MultiStage Docker file:
+=========
+Ex: Building Frontend single stage
+FROM node:18 == instead of this you can use alpine/slim images becoz if you use node:18 its size will be in GB buth alpine will be in MB 
+WORKDIR /app ==  application directory, if this does not exist docker will create this
+COPY .. == Copy everything in current context, like whatever project files we have make sure to create image
+RUN npm install == going to install all dependencies and store in new folder node_modules this folder will be very large in size as it contains all dependencies
+RUN npm run build == going to create new folder like **app or dist**, it contains actual package that we will use to run the application
+CMD ["node", "dist/app.js"] == this will start the application app.js will be entry point of application.
+
+The main folder we need is dist or app whichever gets created, we don't need to have node_modules folder, for singlestage the if we keep node-modules foldeeeeer the size of image will be very big, so we need to have system in whihc we are able to get or use only app.js directory. To do that we will crate multistage docker file in which we can execute these(Single stage) cmnds, so that we can have dist folder created along with other things that we don't need like node_modules, once we have run this as stage1, then we create another cmnds as stage2, from stage1 we will copy dist/app.js  because we already ran npm install and build cmnds. so we can individually copy dist/app.js in stage2 and we can use it. so here benefit we are getting is in final docker stage2 image we will only have files that we actually need.
+How we can implement this? 
+# === STAGE 1: Build ===
+FROM node:18 AS builder == Defining as builder becozz later when we want to copy from stage we can define i want to copy from builder stage
+WORKDIR /app              # Sets working directory inside container
+COPY package*.json ./ == we are copying this becoz we could utilize caching also
+RUN npm install == when we run this it will check above copied file and based on that it will download all dependencies. when we want to run same for another image we o need to run these again we can cache these 
+                   layers and call these cache in another run
+COPY . .                  # Copies all source code to /app
+RUN npm run build         # Builds the app (creates /app/dist or similar) , Till stage1 we are downloading all dependencies npm install copying everything and running npm run build, after this it will create dist folder along with other folders like src node_modules etc.but we need only dist folder
+# === STAGE 2: Production ===
+FROM node:18-slim == Smaller Node.js image for lightweight runtime == taking base image
+WORKDIR /app == defining directory
+# Copy only build artifacts and minimal files from builder stage
+COPY --from=builder /app/dist ./dist == copy from build stage
+COPY --from=builder /app/package*.json ./
+RUN npm install --only=production == Installs only production dependencies
+CMD ["node", "dist/app.js"]         # Starts the built app
+
+Multistage Docker file client/frontend
+======
+# Stage 1: Build React App
+FROM node:22-alpine AS builder == alpine based images will be small in size so using alpine as builder means stage is builder
+WORKDIR /app == directory
+# Copy dependency files first to leverage Docker cache
+COPY package.json package-lock.json ./ == copying dependencies pkg.json will contain dependencies we will be needing pkg-lock.json will contains specific version that will be using
+# Install dependencies (CI style = clean install from lockfile)
+RUN npm ci == npm ci is better than install cmnd becoz it will focus on pkglock.json from above step so that ut can download exact version of dependency
+# Copy the rest of the source code
+COPY . .
+# Build the React app (outputs to /build)
+RUN npm run build == will generate static file of frontend that we will deploy it can be npm run dist/app/build
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+# Copy built static files from builder stage to nginx html directory
+COPY --from=builder /app/build /usr/share/nginx/html == copying static files from npm build cmnd copy at this location inside nginix /usr/share/nginx/html
+# Optional: add custom nginx config (useful for SPA routing)
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf == final thing to copy is config file which we have to creatre in our root dorectory
+# Expose port 80
+EXPOSE 80 == provide info where to expose
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"] == start nginix deamon=off cmnd says run nginix in frontend daemon is somrthing running in background , stage2 is frontend docker image
+
+we need 2 stages becoz in stage 1 we will be downloading all dependencies, biulding application and generating specific pkg taht we are using for deployment, out of these many things the only thing we actually need is actual package, But if you are building single stage docker file all these things will exist in that image which is going to make image very huge in size. Instaed of this we can have two stages, first stage will be builder stage where we are going to build application download dependencies create packages that will be needed, second stage will be actual stage where the application will be running, here what we can do from stage1 we can copy only one thing which is actual package that we want to deploy or use and rest we can writex: if we want to use ngnix we can write in stage2. so benefit you get final docker image will be only stage2 components and less in size, first thing that will create when you install dependencies is node_mmodules which is very huge in size and if you keeping it the image will become very huge so we will ignore thius and in second stage we copy only required ones, this will make sure that unnecesary things wont exist in final docker image, this is the main reason to use multistage docker files
+
+
+
+
+
+
+
+
+
+ 
 
 
 
