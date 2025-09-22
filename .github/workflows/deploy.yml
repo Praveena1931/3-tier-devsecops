@@ -39,10 +39,16 @@ jobs:
         with:
           args: detect --source ./client --exit-code 1
 
-      - name: Run GitLeaks (Backend)
-        uses: zricethezav/gitleaks-action@v2
-        with:
-          args: detect --source ./api --exit-code 1
+      - name: Run Gitleaks
+        run: |
+             curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz | tar -xz
+             ./gitleaks detect --source ./api --exit-code 1
+
+
+    #   - name: Run GitLeaks (Backend)
+    #     uses: zricethezav/gitleaks-action@v2
+    #     with:
+    #       args: detect --source ./api --true
 
       - name: Install Sonar Scanner
         run: |
@@ -77,13 +83,13 @@ jobs:
       - name: Build & Push Backend Image
         run: |
           cd api
-          docker build -t adijaiswal/backend:latest .
-          trivy image --format table -o backend-image-report.html adijaiswal/backend:latest
-          docker push adijaiswal/backend:latest
+          docker build -t 3tier/backend:latest .
+          trivy image --format table -o backend-image-report.html 3tier/backend:latest
+          docker push 3tier/backend:latest
 
       - name: Build & Push Frontend Image
         run: |
           cd client
-          docker build -t adijaiswal/frontend:latest .
-          trivy image --format table -o frontend-image-report.html adijaiswal/frontend:latest
-          docker push adijaiswal/frontend:latest
+          docker build -t 3tier/frontend:latest .
+          trivy image --format table -o frontend-image-report.html 3tier/frontend:latest
+          docker push 3tier/frontend:latest
