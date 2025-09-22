@@ -44,6 +44,7 @@ jobs:
             gitleaks detect --source ./client --exit-code 1 --report-path gitleaks-client-report.json
 
 
+            
     #   - name: Gitleaks Scan API
     #     uses: zricethezav/gitleaks-action@v2
     #     with:
