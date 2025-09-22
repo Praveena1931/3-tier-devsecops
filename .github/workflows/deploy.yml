@@ -1,0 +1,89 @@
+name: NodeJS CI/CD Pipeline
+
+on:
+  push
+    
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      SCANNER_HOME: /opt/sonar-scanner
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+
+      - name: Check Frontend JS files
+        run: |
+          cd client
+          find . -name "*.js" -exec node --check {} +
+
+      - name: Check Backend JS files
+        run: |
+          cd api
+          find . -name "*.js" -exec node --check {} +
+
+      - name: Run GitLeaks
+        uses: zricethezav/gitleaks-action@v2
+        with:
+          args: detect --source ./client --exit-code 1
+
+      - name: Run GitLeaks (Backend)
+        uses: zricethezav/gitleaks-action@v2
+        with:
+          args: detect --source ./api --exit-code 1
+
+      - name: Install Sonar Scanner
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-5.0.1.3006-linux.zip
+          unzip sonar-scanner.zip -d /opt
+          mv /opt/sonar-scanner-* $SCANNER_HOME
+          echo "$SCANNER_HOME/bin" >> $GITHUB_PATH
+
+      - name: Run Sonar Scanner
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=NodeJS-Project \
+            -Dsonar.projectName=NodeJS-Project \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN
+
+      - name: Trivy FS Scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          output: 'fs-report.html'
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Backend Image
+        run: |
+          cd api
+          docker build -t adijaiswal/backend:latest .
+          trivy image --format table -o backend-image-report.html adijaiswal/backend:latest
+          docker push adijaiswal/backend:latest
+
+      - name: Build & Push Frontend Image
+        run: |
+          cd client
+          docker build -t adijaiswal/frontend:latest .
+          trivy image --format table -o frontend-image-report.html adijaiswal/frontend:latest
+          docker push adijaiswal/frontend:latest
