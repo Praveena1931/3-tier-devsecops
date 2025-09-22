@@ -132,13 +132,13 @@ jobs:
       - name: Build & Push Backend Image
         run: |
           cd api
-          docker build -t 3tier/backend:latest .
-          trivy image --format table -o backend-image-report.html 3tier/backend:latest
-          docker push 3tier/backend:latest
+          docker build -t praveena31/backend:latest .
+          trivy image --format table -o backend-image-report.html praveena31/backend:latest
+          docker push praveena31/backend:latest
 
       - name: Build & Push Frontend Image
         run: |
           cd client
-          docker build -t 3tier/frontend:latest .
-          trivy image --format table -o frontend-image-report.html 3tier/frontend:latest
-          docker push 3tier/frontend:latest
+          docker build -t praveena31/frontend:latest .
+          trivy image --format table -o frontend-image-report.html praveena31/frontend:latest
+          docker push praveena31/frontend:latest
