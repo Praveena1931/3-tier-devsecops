@@ -34,19 +34,28 @@ jobs:
           cd api
           find . -name "*.js" -exec node --check {} +
 
-      - name: Gitleaks Scan API
-        uses: zricethezav/gitleaks-action@v2
-        with:
-          args: detect --source ./api --report-path api-gitleaks-report.json
-          report_format: json
-          report_name: gitleaks-api
+      - name: Run Gitleaks Scan (Client + API)
+        run: |
+            curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz | tar -xz
+            sudo mv gitleaks /usr/local/bin/
 
-      - name: Gitleaks Scan Client
-        uses: zricethezav/gitleaks-action@v2
-        with:
-          args: detect --source ./client --report-path client-gitleaks-report.json
-          report_format: json
-          report_name: gitleaks-client
+            gitleaks detect --source ./api --exit-code 1 --report-path gitleaks-api-report.json
+            gitleaks detect --source ./client --exit-code 1 --report-path gitleaks-client-report.json
+
+
+    #   - name: Gitleaks Scan API
+    #     uses: zricethezav/gitleaks-action@v2
+    #     with:
+    #       args: detect --source ./api --report-path api-gitleaks-report.json
+    #       report_format: json
+    #       report_name: gitleaks-api
+
+    #   - name: Gitleaks Scan Client
+    #     uses: zricethezav/gitleaks-action@v2
+    #     with:
+    #       args: detect --source ./client --report-path client-gitleaks-report.json
+    #       report_format: json
+    #       report_name: gitleaks-client
 
 
     #   - name: Run GitLeaks
