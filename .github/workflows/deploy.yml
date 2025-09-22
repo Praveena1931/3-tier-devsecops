@@ -48,9 +48,10 @@ jobs:
       - name: Run GitLeaks (Backend)
         uses: zricethezav/gitleaks-action@v2
         with:
-              args: detect --source ./api --report-path api-gitleaks-report.json
-              report_format: json
-              report_name: gitleaks-api
+              args: detect --source ./api --exit-code 1
+              upload_artifact: false
+            #   report_format: json
+            #   report_name: gitleaks-api
         #   args: detect --source ./api --true
 
       - name: Install Sonar Scanner
