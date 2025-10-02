@@ -162,6 +162,10 @@ jobs:
         with:
           version: latest
 
+      - name: Create namespace if not exists
+        run: |
+             kubectl get namespace prod || kubectl create namespace prod
+
     # Get AKS credentials and set kubeconfig
       - name: Set AKS context
         uses: azure/aks-set-context@v3
@@ -173,7 +177,7 @@ jobs:
     # Deploy manifests to AKS
       - name: Deploy to AKS
         run: |
-          kubectl apply -f k8s-prod/sc.yaml 
+          kubectl apply -f k8s-prod/sc.yaml   
           kubectl apply -f k8s-prod/mysql.yaml 
           kubectl apply -f k8s-prod/backend.yaml 
           kubectl apply -f k8s-prod/frontend.yaml 
