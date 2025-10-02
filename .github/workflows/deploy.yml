@@ -156,7 +156,22 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # Setup kubectl
+  
+      - name: Get AKS Credentials
+        run: |
+              az aks get-credentials \
+              -resource-group ${{ secrets.AKS_RESOURCE_GROUP }} \
+              --name ${{ secrets.AKS_CLUSTER_NAME }} \
+              --overwrite-existing
+    # Get AKS credentials and set kubeconfig
+      # - name: Set AKS context
+      #   uses: azure/aks-set-context@v3
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      #     resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+      #     cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+        # Setup kubectl
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
@@ -165,14 +180,6 @@ jobs:
       - name: Create namespace if not exists
         run: |
              kubectl get namespace prod || kubectl create namespace prod
-
-    # Get AKS credentials and set kubeconfig
-      - name: Set AKS context
-        uses: azure/aks-set-context@v3
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
 
     # Deploy manifests to AKS
       - name: Deploy to AKS
