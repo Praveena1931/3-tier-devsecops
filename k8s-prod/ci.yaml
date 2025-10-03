@@ -1,5 +1,5 @@
 ---
-apiVersion: cert-manager.io/v1
+apiVersion: cert-manager.io/v1.18.2
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-prod
