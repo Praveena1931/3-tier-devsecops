@@ -247,7 +247,7 @@ jobs:
       - name: Deploy Prometheus Stack with Helm
         run: |
           helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-            -f values.yaml \
+            -f monitoring/values.yaml \
             -n monitoring --create-namespace
 
       - name: Wait for Services to Get External IPs
