@@ -233,3 +233,37 @@ jobs:
           kubectl get svc frontend-svc -n prod
           echo "Fetching ingress info..."
           kubectl get ingress -n prod
+
+
+      - name: Set up Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Add Prometheus Helm Repo
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+
+      - name: Deploy Prometheus Stack with Helm
+        run: |
+          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+            -f values.yaml \
+            -n monitoring --create-namespace
+
+      - name: Wait for Services to Get External IPs
+        run: |
+          echo "Waiting for services to get external IPs..."
+          sleep 60  # wait for LoadBalancer IPs to be assigned
+
+      - name: Get External IPs
+        run: |
+          echo "Prometheus External IP:"
+          kubectl get svc monitoring-kube-prometheus-stack-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+          echo ""
+          echo "Grafana External IP:"
+          kubectl get svc monitoring-kube-prometheus-stack-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+          echo ""
+          echo "Alertmanager External IP:"
+          kubectl get svc monitoring-kube-prometheus-stack-alertmanager -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
