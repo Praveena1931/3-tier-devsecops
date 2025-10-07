@@ -197,6 +197,25 @@ jobs:
             kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=120s
             kubectl rollout status deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 
+        # 🚀 Install NGINX Ingress Controller
+      - name: Install NGINX Ingress Controller
+        run: |
+            kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+
+      - name: Wait for NGINX Ingress Controller external IP
+        run: |
+           echo "Waiting for NGINX Ingress Controller external IP..."
+           for i in {1..30}; do
+           IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+           if [ -n "$IP" ]; then
+            echo "Ingress External IP: $IP"
+            break
+           fi
+            echo "Still waiting... ($i/30)"
+           sleep 10
+           done
+
+
 
     # Deploy manifests to AKS
       - name: Deploy to AKS
@@ -207,3 +226,10 @@ jobs:
           kubectl apply -f k8s-prod/frontend.yaml 
           kubectl apply -f k8s-prod/ci.yaml 
           kubectl apply -f k8s-prod/ingress.yaml
+
+      - name: Show application external IP
+        run: |
+          echo "Fetching external IP of frontend service..."
+          kubectl get svc frontend-svc -n prod
+          echo "Fetching ingress info..."
+          kubectl get ingress -n prod

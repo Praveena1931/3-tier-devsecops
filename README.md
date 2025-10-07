@@ -382,8 +382,71 @@ stage('Verify k8s Deployment ') {
             }
         }
         
+# Day-7
+What is monitoring? It us process of collecting, analyzing, amd visualizing data from our system infrastructure or even applications to ensure that everything is working as expected. first what it does is collecting data second analyzing data third visualizing data, simply these are three steps we use in order to perform monitoring for anything we want, we need monitoring to ensure everything is working as expected for ex: we need to make sure website is running all the pods are running etc also performing things like checking node metrics, like cpu ram disk usage and, no of request coming to app, response time for request, checking error rates, health of application, if tehre are any pod restart monitor pod, worker node failures and also custom metrics.
+so monitoring gives us visiblity without monitoring we are flying blind, to perform monitoring we need some tools one of the most used tool is **Prometheus** it is opensource monitoring and alerting tool kit, its pullbased means if prometheus want to monitor something it needs some metrics it will get those by pulling metrics, ex if xyz website needs to be monitored it should have endpoint/metric, from this prometheus can pull it. thirdly its a time series monitoring system means we will get metrics on regular intervals of time. fourth when prometheus has collected metrics it is going to store inside a special database known as **time-series-database**. prometheus will pull metrics by /mertics endpoint, not every wesite have this endpoint exposed by default in that case, it has exportes means they are lightweight agents that can collect the metrics from system and expose them on an HTTP endpoint for prometheus compatible format. ex: prometheus needs to get metrics from abc wesite but it don't have /metrics endpoint in that case we can set exporters. one of most used exporter is **Node Exporter** , it will focus on node level metrics like cpu, RAM, Disk Usage, these are like node level mertics, when its installed it will fetch all the metrics and expose them on specific(/metric) endpoint.Once it is exposed then promethus can easily get them, 
+we have one more thing known as **Kube-State-Metrics** this will monitor kubernetes specific resources, it will expose k8s related resources which call be pulled by prometheus, it could expose ports specific to namespaces, then worker nodes and all other resources that we need to monitor and will be exposed by kubestate metrics easily.
+All these data is given to prometheus for monitoring and analysing buut problem here is the data its having is not human readbale, for that problem we have another tool known as **Grafana** . The main purpose of this to visualize all the data given in prometheus and to present that data in user friendly format for analysis. Grafana is not monitoring data, it is presenting data which is monitored by prometheus to us in user friendly format. to present that data we have to create dashboard, in dashboard we can provide key like what we want to see, ex i want to see prts of app and i want to see result in a cn=hart format or bar format, but creating dashboard is not simple thing eventhough it is dragdrop kind of thing it is little bit complex, if someine creates multiple dashboards that will be very useful and thats where **HELM** is Used
+To setup all these we have wirte Yaml file whihc is time taking instaed if yaml file we can use HELM. using helm we can directly add a Helm repo
+these repos will be containing a kind of preconfigured code for setting up promrtheus,grafana etc, to setup these in machine we have to change few things ex, we should have loadbalancer URL so that we can access certain resources over browser, i want to defy how many replicas i want to have.
+if wehave to add own configuration to a preconfigured file like default file and need to modify that i can create a seperate YAML file inside that i can define my custom config like add loadbalacer or any other changes need to monitor, these things will make monitoring easier.
+Install helm on VM using below cmnds
+# Install HELM
+sudo apt update && sudo apt upgrade -y
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+after this add specific repo to add monitoring tools by below cmnd
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+next update this by this cmnd helm repo update
+next create yaml file for this create one directory in vm known as monitoring and paste below contents on file as values.yml, becoz for k8s configuration specific values that we wnat to have in our deployments and parts we will define here
+alertmanager: --it is exporter for prometheus which is responsible for sending alerts
+  enabled: false
+prometheus:
+  prometheusSpec:
+    service:
+      type: LoadBalancer -- defining service tyoe should be load balancer so that we can access promethus over browser
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ebs-sc --responsible for setting up volumes
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+grafana:
+  enabled: true
+  service:
+    type: LoadBalancer
+  adminUser: admin
+  adminPassword: admin123
+nodeExporter:
+  service:
+    type: LoadBalancer
+kubeStateMetrics:
+  enabled: true
+prometheus-node-exporter:
+  service:
+    type: LoadBalancer
+additionalScrapeConfigs:
+  - job_name: node-exporter
+    static_configs:
+      - targets:
+          - node-exporter:9100 --servicename : port
+  - job_name: kube-state-metrics
+    static_configs:
+      - targets:
+          - kube-state-metrics:8080
 
+After saving file then deploy using 
+helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -f values.yaml -n monitoring --create-namespace
+once its created verify using this cmnd kubectl  get all -n monitoring  
+only grafana got loadbalancer ip for prometheus to get ip we have to do patch step ususally it should also get but due to some ereor its didnt got
+# Patch services to LoadBalancer for External Access
+kubectl patch svc monitoring-kube-prometheus-prometheus -n monitoring -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl patch svc monitoring-kube-state-metrics -n monitoring -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl patch svc monitoring-prometheus-node-exporter -n monitoring -p '{"spec": {"type": "LoadBalancer"}}'
+after this use this cmnd kubectl get svc -n monitoring
 
 
 
