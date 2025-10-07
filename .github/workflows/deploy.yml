@@ -250,20 +250,20 @@ jobs:
             -f monitoring/values.yaml \
             -n monitoring --create-namespace
 
-      - name: Wait for Services to Get External IPs
-        run: |
-          echo "Waiting for services to get external IPs..."
-          sleep 60  # wait for LoadBalancer IPs to be assigned
+      # - name: Wait for Services to Get External IPs
+      #   run: |
+      #     echo "Waiting for services to get external IPs..."
+      #     sleep 60  # wait for LoadBalancer IPs to be assigned
 
-      - name: Get External IPs
-        run: |
-          echo "Prometheus External IP:"
-          kubectl get svc monitoring-kube-prometheus-stack-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      # - name: Get External IPs
+      #   run: |
+      #     echo "Prometheus External IP:"
+      #     kubectl get svc monitoring-kube-prometheus-stack-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
-          echo ""
-          echo "Grafana External IP:"
-          kubectl get svc monitoring-kube-prometheus-stack-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      #     echo ""
+      #     echo "Grafana External IP:"
+      #     kubectl get svc monitoring-kube-prometheus-stack-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
-          echo ""
-          echo "Alertmanager External IP:"
-          kubectl get svc monitoring-kube-prometheus-stack-alertmanager -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      #     echo ""
+      #     echo "Alertmanager External IP:"
+      #     kubectl get svc monitoring-kube-prometheus-stack-alertmanager -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
